@@ -1326,14 +1326,55 @@ function setMainIO(val) {
     try { io.setSelectionRange(0, 0); } catch(e) {}
 }
 
-function restoreMainIOIfEdited() {
-    if (restoringIO) return;
-    if (io.value !== lastMainIO) {
-        restoringIO = true;
-        io.value = lastMainIO;
-        restoringIO = false;
-        try { io.setSelectionRange(0, 0); } catch(e) {}
+function extractInsertedText(newVal, oldVal) {
+    newVal = String(newVal ?? "");
+    oldVal = String(oldVal ?? "");
+
+    if (!oldVal) return newVal;
+
+    // Common cases: insert at end or at start
+    if (newVal.startsWith(oldVal)) return newVal.slice(oldVal.length);
+    if (newVal.endsWith(oldVal)) return newVal.slice(0, newVal.length - oldVal.length);
+
+    // General case: old text appears somewhere inside new text
+    const idx = newVal.indexOf(oldVal);
+    if (idx !== -1) {
+        return newVal.slice(0, idx) + newVal.slice(idx + oldVal.length);
     }
+
+    // Fallback: can't reconcile; treat everything as "inserted"
+    return newVal;
+}
+
+function handleIOInputEvent(el, lastVal, e) {
+    if (restoringIO) return;
+    if (!gameIsShown()) return;
+
+    const cur = String(el.value ?? "");
+    if (cur === lastVal) return;
+
+    // iOS / some virtual keyboards may only emit input events (no reliable keydown/beforeinput).
+    // Extract what was inserted and route it as gameplay commands, then restore the display text.
+    const inserted = extractInsertedText(cur, lastVal);
+
+    // Always restore the IO display (prevents the field from accumulating typed chars)
+    restoringIO = true;
+    el.value = lastVal;
+    restoringIO = false;
+    try { el.setSelectionRange(0, 0); } catch(_e) {}
+
+    if (!inserted) return;
+
+    for (const ch of inserted) {
+        if (ch === '
+' || ch === '
+') routeKey('enter');
+        else routeKey(String(ch).toLowerCase());
+    }
+}
+
+function restoreMainIOIfEdited(e) {
+    handleIOInputEvent(io, lastMainIO, e);
 }
 
 
@@ -1394,14 +1435,8 @@ function setModalIO(val) {
     try { modalIo.setSelectionRange(0, 0); } catch(e) {}
 }
 
-function restoreModalIOIfEdited() {
-    if (restoringIO) return;
-    if (modalIo.value !== lastModalIO) {
-        restoringIO = true;
-        modalIo.value = lastModalIO;
-        restoringIO = false;
-        try { modalIo.setSelectionRange(0, 0); } catch(e) {}
-    }
+function restoreModalIOIfEdited(e) {
+    handleIOInputEvent(modalIo, lastModalIO, e);
 }
 
 
