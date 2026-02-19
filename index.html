@@ -1318,12 +1318,44 @@ let lastMainIO = "";
 let lastModalIO = "";
 let restoringIO = false;
 
+
+const IS_IOS = (() => {
+    const ua = navigator.userAgent || "";
+    // iPadOS sometimes reports as MacIntel with touch points.
+    const iOSUA = /iPad|iPhone|iPod/i.test(ua);
+    const iPadOS = (navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1);
+    return iOSUA || iPadOS;
+})();
+
+function pokeScreenReader(el) {
+    if (!el) return;
+    // Many screen readers refresh braille output on selection changes.
+    try {
+        const L = (el.value || "").length;
+        el.setSelectionRange(L, L);
+        el.setSelectionRange(0, 0);
+    } catch (e) { /* ignore */ }
+
+    // VoiceOver Safari sometimes won't refresh the focused textarea value unless focus is nudged.
+    if (IS_IOS && document.activeElement === el) {
+        const st = el.scrollTop;
+        // readonly textarea won't raise the keyboard, but blur/focus helps VO.
+        el.blur();
+        requestAnimationFrame(() => {
+            try { el.focus({ preventScroll: true }); } catch (e) { try { el.focus(); } catch(_){} }
+            try { el.setSelectionRange(0, 0); } catch (e) { /* ignore */ }
+            try { el.scrollTop = st; } catch (e) { /* ignore */ }
+        });
+    }
+}
+
+
 function setMainIO(val) {
     lastMainIO = String(val ?? "");
     restoringIO = true;
     io.value = lastMainIO;
     restoringIO = false;
-    try { io.setSelectionRange(0, 0); } catch(e) {}
+    pokeScreenReader(io);
 }
 
 function extractInsertedText(newVal, oldVal) {
@@ -1430,7 +1462,7 @@ function setModalIO(val) {
     restoringIO = true;
     modalIo.value = lastModalIO;
     restoringIO = false;
-    try { modalIo.setSelectionRange(0, 0); } catch(e) {}
+    pokeScreenReader(modalIo);
 }
 
 function restoreModalIOIfEdited(e) {
@@ -1460,8 +1492,7 @@ function openModal(kind, title, body, ioClass = "") {
 
     // Focus inside modal
     modalIo.focus();
-    try { modalIo.setSelectionRange(0,0); } catch(e) {}
-}
+    pokeScreenReader(modalIo);}
 
 function closeModal() {
     if (!modalOpen) return;
@@ -1473,7 +1504,6 @@ function closeModal() {
 
     // Return focus to the movement input
     io.focus();
-    try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
 // Keep keyboard focus where it belongs (movement input / modal input)
@@ -1798,6 +1828,9 @@ function gameIsShown() {
 
 function routeKeydown(e) {
     if (!gameIsShown()) return;
+    // Prevent double-handling when listeners exist on both document and inputs.
+    if (e.__tomHandled) return;
+    e.__tomHandled = true;
 
     // Trap focus + smooth movement: prevent Tab from leaving the input.
     // Also ignore modifier-only keys.
@@ -1834,6 +1867,7 @@ function routePaste(e) {
 
 io.addEventListener('keydown', routeKeydown);
 modalIo.addEventListener('keydown', routeKeydown);
+document.addEventListener('keydown', routeKeydown, true);
 
 // Block + reroute text entry that bypasses keydown
 io.addEventListener('beforeinput', routeBeforeInput);
@@ -1957,7 +1991,6 @@ function renderInventoryRoot() {
               `Skills: ${player.skills && player.skills.length ? player.skills.join(", ") : "(none yet)"}\n`;
     out = consumeBanner() + out;
     setMainIO(out);
-    try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
 function renderInventoryList(mode) {
@@ -2053,7 +2086,6 @@ if ((p.potions||0) + (p.elixirs||0) + (p.ethers||0) + foodNames.reduce((a,n)=>a+
     out = consumeBanner() + out;
 
     setMainIO(out);
-    try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
 function handleInventoryInput(key) {
@@ -2843,8 +2875,7 @@ Skills (letters): `;
     // Render inside combat modal
     if (modalOpen && modalKind === 'combat') {
         setModalIO(output);
-        try { modalIo.setSelectionRange(0,0); } catch(e) {}
-    } else {
+        pokeScreenReader(modalIo);} else {
         setMainIO(output);
     }
 
@@ -2992,7 +3023,6 @@ function renderShopRootMenu() {
     output += "1. Buy\n2. Sell\n3. Leave\n\n";
     output += "[Space Exit]";
     setMainIO(output);
-    try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
 function renderShopBuyMenu() {
@@ -3014,7 +3044,6 @@ function renderShopBuyMenu() {
     });
     output += "\nB=Back  Space=Exit";
     setMainIO(output);
-    try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
 function renderShopSellMenu() {
@@ -3024,7 +3053,6 @@ function renderShopSellMenu() {
     else shopSellList.forEach((e, i) => { output += `${i+1}. ${e.label}  +${e.value}g\n`; });
     output += "\nB=Back  Space=Exit";
     setMainIO(output);
-    try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
 function handleShopInput(key) {
@@ -3212,7 +3240,7 @@ function startTraining(npcKey, npcMeta) {
     });
 
     setMainIO(out);
-    io.setSelectionRange(0,0);
+    pokeScreenReader(io);
 }
 
 function handleTrainingInput(key) {
@@ -3733,7 +3761,6 @@ function renderView() {
         output += line;
     }
     setMainIO(output);
-    io.setSelectionRange(0,0);
 }
 
 document.addEventListener('click', () => {
