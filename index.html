@@ -1313,6 +1313,30 @@ let interactKey = null;
 
 const io = document.getElementById('braille-io');
 
+// --- IO VALUE GUARDS (prevent accidental text entry from assistive tech / IME) ---
+let lastMainIO = "";
+let lastModalIO = "";
+let restoringIO = false;
+
+function setMainIO(val) {
+    lastMainIO = String(val ?? "");
+    restoringIO = true;
+    io.value = lastMainIO;
+    restoringIO = false;
+    try { io.setSelectionRange(0, 0); } catch(e) {}
+}
+
+function restoreMainIOIfEdited() {
+    if (restoringIO) return;
+    if (io.value !== lastMainIO) {
+        restoringIO = true;
+        io.value = lastMainIO;
+        restoringIO = false;
+        try { io.setSelectionRange(0, 0); } catch(e) {}
+    }
+}
+
+
 /* --- SOUND (embedded, offline) --- */
 /* These sounds are generated (WAV) and embedded as data URIs so they work offline. */
 const SOUND_DATA = {
@@ -1362,6 +1386,25 @@ const modalOverlay = document.getElementById('modal-overlay');
 const modalTitle = document.getElementById('modal-title');
 const modalIo = document.getElementById('modal-io');
 
+function setModalIO(val) {
+    lastModalIO = String(val ?? "");
+    restoringIO = true;
+    modalIo.value = lastModalIO;
+    restoringIO = false;
+    try { modalIo.setSelectionRange(0, 0); } catch(e) {}
+}
+
+function restoreModalIOIfEdited() {
+    if (restoringIO) return;
+    if (modalIo.value !== lastModalIO) {
+        restoringIO = true;
+        modalIo.value = lastModalIO;
+        restoringIO = false;
+        try { modalIo.setSelectionRange(0, 0); } catch(e) {}
+    }
+}
+
+
 let modalOpen = false;
 let modalKind = null; // 'interact' | 'combat'
 let lastFocusedEl = null;
@@ -1379,7 +1422,7 @@ function openModal(kind, title, body, ioClass = "") {
 
     // Match the main IO height for consistency with Braille displays
     modalIo.style.height = io.style.height || "320px";
-    modalIo.value = body || "";
+    setModalIO(body || "");
     modalOverlay.setAttribute("aria-hidden", "false");
 
     // Focus inside modal
@@ -1393,7 +1436,7 @@ function closeModal() {
     modalOpen = false;
     modalKind = null;
     modalOverlay.setAttribute("aria-hidden", "true");
-    modalIo.value = "";
+    setModalIO("");
 
     // Return focus to the movement input
     io.focus();
@@ -1548,18 +1591,9 @@ function saveGame() {
 
 
 /* --- INPUT ROUTER (IO + MODAL IO) --- */
-function routeKeydown(e) {
-    if (e.__tomHandled) return;
-    e.__tomHandled = true;
 
-    // Trap focus + smooth movement: prevent Tab from leaving the input.
-    // Also ignore modifier-only keys.
-    if (e.key === 'Tab') { e.preventDefault(); return; }
-    if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt') return;
-
-    e.preventDefault();
-    const key = (e.key || "").toLowerCase();
-
+// Route a normalized key string (already lowercased where appropriate)
+function routeKey(key) {
     // Toggle sound on/off
     if (key === '=') { toggleSound(true); return; }
 
@@ -1588,7 +1622,6 @@ function routeKeydown(e) {
                 case 'INTERACT': handleInteractInput(s); break;
                 case 'TRAIN': handleTrainingInput(s); break;
             }
-            return;
         }
         return;
     }
@@ -1612,17 +1645,60 @@ function routeKeydown(e) {
     }
 }
 
+function gameIsShown() {
+    return document.getElementById('game-container').style.display === 'block';
+}
+
+function routeKeydown(e) {
+    if (!gameIsShown()) return;
+
+    // Trap focus + smooth movement: prevent Tab from leaving the input.
+    // Also ignore modifier-only keys.
+    if (e.key === 'Tab') { e.preventDefault(); return; }
+    if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
+
+    // Stop the browser/editor from inserting text.
+    e.preventDefault();
+
+    const key = (e.key || "").toLowerCase();
+    routeKey(key);
+}
+
+function routeBeforeInput(e) {
+    if (!gameIsShown()) return;
+
+    // Prevent any text from being inserted into the IO fields.
+    // Some assistive tech and IME/braille keyboards can bypass keydown and only emit beforeinput/input.
+    e.preventDefault();
+
+    const data = (typeof e.data === 'string') ? e.data : "";
+    if (!data) return;
+
+    for (const ch of data) {
+        if (ch === '\n' || ch === '\r') routeKey('enter');
+        else routeKey(String(ch).toLowerCase());
+    }
+}
+
+function routePaste(e) {
+    if (!gameIsShown()) return;
+    e.preventDefault();
+}
+
 io.addEventListener('keydown', routeKeydown);
 modalIo.addEventListener('keydown', routeKeydown);
 
-// Hard block text entry in the IO fields (some assistive tech can bypass keydown)
-io.addEventListener('beforeinput', (e) => { e.preventDefault(); });
-modalIo.addEventListener('beforeinput', (e) => { e.preventDefault(); });
+// Block + reroute text entry that bypasses keydown
+io.addEventListener('beforeinput', routeBeforeInput);
+modalIo.addEventListener('beforeinput', routeBeforeInput);
+io.addEventListener('input', restoreMainIOIfEdited);
+modalIo.addEventListener('input', restoreModalIOIfEdited);
+io.addEventListener('paste', routePaste);
+modalIo.addEventListener('paste', routePaste);
 
 // Capture keystrokes even if focus drifts, so movement always refreshes the map
 document.addEventListener('keydown', (e) => {
-    const gameShown = document.getElementById('game-container').style.display === 'block';
-    if (!gameShown) return;
+    if (!gameIsShown()) return;
 
     // Keep focus on the correct IO
     if (modalOpen) {
@@ -1633,6 +1709,12 @@ document.addEventListener('keydown', (e) => {
 
     // Route all gameplay keys through the same handler
     routeKeydown(e);
+
+    // If we handled the key, don't let it bubble to the browser/editor
+    if (e.defaultPrevented) {
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+    }
 }, true);
 
 function handleRoamInput(key) {
@@ -1727,7 +1809,7 @@ function renderInventoryRoot() {
               `Equipped Clothing: ${eqC ? equipmentLabel(eqC) : "(none)"}\n\n` +
               `Skills: ${player.skills && player.skills.length ? player.skills.join(", ") : "(none yet)"}\n`;
     out = consumeBanner() + out;
-    io.value = out;
+    setMainIO(out);
     try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
@@ -1823,7 +1905,7 @@ if ((p.potions||0) + (p.elixirs||0) + (p.ethers||0) + foodNames.reduce((a,n)=>a+
 
     out = consumeBanner() + out;
 
-    io.value = out;
+    setMainIO(out);
     try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
@@ -2043,7 +2125,7 @@ function attemptMove(dx) {
 function openSaveMenu() {
     currentState = 'SAVE_MENU';
     io.classList.add('saving');
-    io.value = "SAVE GAME? 1:Download File 2:Cancel";
+    setMainIO("SAVE GAME? 1:Download File 2:Cancel");
 }
 
 function handleSaveInput(key) {
@@ -2245,7 +2327,7 @@ function triggerDeath() {
     if (modalOpen && modalKind === 'combat') closeModal();
     currentState = 'DEATH';
     io.classList.add('death');
-    io.value = `DIED! Lives:${player.lives}. 1:Use Stone Of Life(${player.inventory.ankhs||0}) 2:Roll Dice(50%)`;
+    setMainIO(`DIED! Lives:${player.lives}. 1:Use Stone Of Life(${player.inventory.ankhs||0}) 2:Roll Dice(50%)`);
 }
 
 function handleDeathInput(key) {
@@ -2254,7 +2336,7 @@ function handleDeathInput(key) {
             player.inventory.ankhs--;
             resurrect(false);
             flash("Used Stone Of Life. Life Saved.");
-        } else { io.value = "No Stones Of Life! Press 2 to Roll."; }
+        } else { setMainIO("No Stones Of Life! Press 2 to Roll."); }
     } else if (key === '2') {
         playSound('diceRoll');
         if (Math.random() > 0.5) { resurrect(false); flash("Dice: SUCCESS!"); }
@@ -2264,7 +2346,7 @@ function handleDeathInput(key) {
 
 function resurrect(consumeLife) {
     if (consumeLife) player.lives--;
-    if (player.lives <= 0) { io.value = "GAME OVER. 0 LIVES. REFRESH."; return; }
+    if (player.lives <= 0) { setMainIO("GAME OVER. 0 LIVES. REFRESH."); return; }
     player.hp = player.maxHp;
     player.mp = player.maxMp;
     currentState = 'ROAM';
@@ -2613,10 +2695,10 @@ Skills (letters): `;
 
     // Render inside combat modal
     if (modalOpen && modalKind === 'combat') {
-        modalIo.value = output;
+        setModalIO(output);
         try { modalIo.setSelectionRange(0,0); } catch(e) {}
     } else {
-        io.value = output;
+        setMainIO(output);
     }
 
     // Announce fight stats via live region (requirement)
@@ -2762,7 +2844,7 @@ function renderShopRootMenu() {
     let output = `${shopNameCurrent}  Gold:${player.gold}\n\n`;
     output += "1. Buy\n2. Sell\n3. Leave\n\n";
     output += "[Space Exit]";
-    io.value = output;
+    setMainIO(output);
     try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
@@ -2784,7 +2866,7 @@ function renderShopBuyMenu() {
         }
     });
     output += "\nB=Back  Space=Exit";
-    io.value = output;
+    setMainIO(output);
     try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
@@ -2794,7 +2876,7 @@ function renderShopSellMenu() {
     if (!shopSellList.length) output += "(Nothing to sell)\n";
     else shopSellList.forEach((e, i) => { output += `${i+1}. ${e.label}  +${e.value}g\n`; });
     output += "\nB=Back  Space=Exit";
-    io.value = output;
+    setMainIO(output);
     try { io.setSelectionRange(0,0); } catch(e) {}
 }
 
@@ -2849,7 +2931,7 @@ function buyItem(i) {
     if (!item) return;
     if (player.gold >= item.price) {
         if(item.type === 'weapon' && player.weapons.some(w=>w.name===item.name)) {
-            io.value = "Already owned!";
+            setMainIO("Already owned!");
             return;
         }
         player.gold -= item.price;
@@ -2870,7 +2952,7 @@ function buyItem(i) {
         speak(`Bought ${item.name}.`, false);
         tryCompleteQuests();
     } else {
-        io.value = `Need ${item.price}g.`;
+        setMainIO(`Need ${item.price}g.`);
         speak("Not enough gold.", true);
     }
 }
@@ -2953,7 +3035,7 @@ function startTraining(npcKey, npcMeta) {
 `;
     if (teach.length === 0) {
         out += "This NPC has nothing to teach.\n";
-        io.value = out;
+        setMainIO(out);
         return;
     }
 
@@ -2982,7 +3064,7 @@ function startTraining(npcKey, npcMeta) {
 `;
     });
 
-    io.value = out;
+    setMainIO(out);
     io.setSelectionRange(0,0);
 }
 
@@ -3001,11 +3083,11 @@ function handleTrainingInput(key) {
 
     ensureSkillState();
     if (player.level < entry.levelReq) {
-        io.value = `Need level ${entry.levelReq}.`;
+        setMainIO(`Need level ${entry.levelReq}.`);
         return;
     }
     if (player.gold < entry.cost) {
-        io.value = `Need ${entry.cost}g.`;
+        setMainIO(`Need ${entry.cost}g.`);
         return;
     }
 
@@ -3468,7 +3550,7 @@ function flash(msg) {
     }
     isFlashing = true;
     io.classList.add('flashing');
-    io.value = `[ ${msg} ]`;
+    setMainIO(`[ ${msg} ]`);
     speak(msg, true);
     log(msg, false);
 }
@@ -3503,7 +3585,7 @@ function renderView() {
         if (r < config.height - 1) line += "\n";
         output += line;
     }
-    io.value = output;
+    setMainIO(output);
     io.setSelectionRange(0,0);
 }
 
