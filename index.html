@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Touch Of Magic v1.4.0</title>
+<title>Touch Of Magic v1.4.2</title>
 <style>
     :root {
         --bg: #000000;
@@ -154,7 +154,7 @@
 <body>
 
 <div id="start-screen" class="screen">
-    <h1>TOUCH OF MAGIC v1.4.0</h1>
+    <h1>TOUCH OF MAGIC v1.4.2</h1>
     <div class="warning">
         Please set Screen Reader to <strong>COMPUTER BRAILLE (8-dot)</strong>.
     </div>
@@ -217,6 +217,9 @@
 </div>
 
 <script>
+// Version (external + internal)
+const GAME_VERSION = "1.4.2";
+
 
 /* --- SETUP LOGIC --- */
 function goToSetup() {
@@ -428,14 +431,62 @@ const RIDDLES = [
   {"q": "What has a neck and no head, two arms and no hands?", "choices": ["A guitar", "A bottle", "A coat", "A shirt"], "a": 3},
 ];
 
+
+// --- Riddle difficulty scaling (dungeons get harder as you level) ---
+function riddleDifficultyScore(r) {
+    const q = String(r?.q || "");
+    const choices = (r?.choices || []).length;
+    // Heuristic: longer + more clause-y + "logic/wordplay" hints => harder.
+    const len = q.length;
+    const clauses = (q.match(/[,\;\:]/g) || []).length + (q.match(/\bbut\b|\band\b|\bor\b|\bif\b|\bthen\b|\bnever\b|\balways\b/gi) || []).length;
+    const neg = (q.match(/\bnot\b|\bnever\b|\bcan't\b|\bcannot\b/gi) || []).length;
+    const abstract = (q.match(/\bgreater\b|\bevil\b|\bpoor\b|\brich\b|\bdie\b|\binvisible\b|\bfragile\b/gi) || []).length;
+    return (len * 0.7) + (clauses * 10) + (neg * 12) + (abstract * 18) + (choices * 2);
+}
+
+let RIDDLE_ORDER = null; // array of indices sorted easiest->hardest
+function buildRiddleOrder() {
+    if (RIDDLE_ORDER) return RIDDLE_ORDER;
+    const scored = RIDDLES.map((r, i) => ({ i, s: riddleDifficultyScore(r) }));
+    scored.sort((a,b) => a.s - b.s);
+    RIDDLE_ORDER = scored.map(x => x.i);
+    return RIDDLE_ORDER;
+}
+
+function riddleTierForLevel(level) {
+    // 4 tiers: 1-2, 3-4, 5-7, 8+
+    if (level >= 8) return 3;
+    if (level >= 5) return 2;
+    if (level >= 3) return 1;
+    return 0;
+}
+
+function pickRiddleIdForLevel(level) {
+    const order = buildRiddleOrder();
+    const tier = riddleTierForLevel(level);
+    const n = order.length;
+    const chunk = Math.max(1, Math.floor(n / 4));
+    const start = tier * chunk;
+    const end = (tier === 3) ? n : Math.min(n, start + chunk);
+    const slice = order.slice(start, end);
+    const idx = slice[Math.floor(Math.random() * slice.length)];
+    return (idx === undefined) ? Math.floor(Math.random() * RIDDLES.length) : idx;
+}
 function ensureDungeonMeta(key) {
     let meta = entityMap[key];
     if (!meta || meta.type !== "dungeon") {
-        meta = { type: "dungeon", riddleId: Math.floor(Math.random() * RIDDLES.length) };
+        meta = { type: "dungeon", riddleId: null, levelStamp: 0 };
         entityMap[key] = meta;
     }
+    // Refresh riddle when player has outgrown the old tier (keeps dungeons feeling progressive)
+    const tierNow = riddleTierForLevel(player.level);
+    const tierWas = riddleTierForLevel(meta.levelStamp || 1);
+    if (!meta.riddleId || tierNow !== tierWas) {
+        meta.riddleId = pickRiddleIdForLevel(player.level);
+        meta.levelStamp = player.level;
+    }
     // clamp
-    if (meta.riddleId === undefined || meta.riddleId === null) meta.riddleId = Math.floor(Math.random() * RIDDLES.length);
+    if (meta.riddleId === undefined || meta.riddleId === null) meta.riddleId = pickRiddleIdForLevel(player.level);
     if (meta.riddleId < 0) meta.riddleId = 0;
     if (meta.riddleId >= RIDDLES.length) meta.riddleId = meta.riddleId % RIDDLES.length;
     return meta;
@@ -524,7 +575,7 @@ function indexToLetters(i) {
 
 /* --- QUEST SYSTEM --- */
 /*
-  v1.4.1+ quest scaling:
+  v1.4.2+ quest scaling:
   - Quest offers scale with player level (tiered difficulty).
   - Accepted quests store their own params/rewards so they stay stable even if player levels up.
   - Legacy quests (from older saves) are migrated on load using LEGACY_QUEST_TEMPLATES.
@@ -1189,6 +1240,14 @@ function rollEquipmentDrop(enemyKind) {
     const r = Math.random();
     if (r < 0.60) return null;
 
+// Small chance: enemies can drop tools too (so tools can be found as loot, not only in shops/ruins)
+// If a drop happens at all, ~20% of those drops are tools.
+if (Math.random() < 0.20) {
+    const t = randomChoice(TOOL_DEFS);
+    return { type: "tool", key: t.key, name: t.name };
+}
+
+
     const r2 = (r - 0.60) / 0.40; // 0..1
     let tier = "ordinary";
     if (r2 < 0.40) tier = "ordinary";          // 20 / 50
@@ -1438,8 +1497,82 @@ function toggleSound(showMsg=true) {
     }
 }
 
+function getAudioCtx() {
+    // Lazy-create AudioContext for synthesized SFX (works offline, no assets).
+    if (!window.__audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        window.__audioCtx = new AC();
+    }
+    // Some browsers suspend until a gesture; keypress/movement counts as a gesture.
+    try { if (window.__audioCtx.state === "suspended") window.__audioCtx.resume().catch(()=>{}); } catch(e){}
+    return window.__audioCtx;
+}
+
+function sfxWaterDrop(vol=0.45) {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(220, now + 0.12);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, Math.min(1, vol)), now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.16);
+}
+
+function sfxDiceSubtle(vol=0.20) {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    // short filtered noise "tssk" (very subtle)
+    const duration = 0.12;
+    const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * duration), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+        // softer noise
+        data[i] = (Math.random() * 2 - 1) * 0.18;
+    }
+
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+
+    const filt = ctx.createBiquadFilter();
+    filt.type = "lowpass";
+    filt.frequency.setValueAtTime(1400, now);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, Math.min(1, vol)), now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    src.connect(filt);
+    filt.connect(gain);
+    gain.connect(ctx.destination);
+
+    src.start(now);
+    src.stop(now + duration + 0.02);
+}
+
 function playSound(name, volume=0.6) {
     if (!soundEnabled) return;
+
+    // Override specific SFX with synthesized versions (requested changes)
+    if (name === 'footstep') { sfxWaterDrop(0.35); return; }
+    if (name === 'diceRoll') { sfxDiceSubtle(Math.min(volume, 0.18)); return; }
+
     const src = SOUND_DATA[name];
     if (!src) return;
     try {
@@ -1752,7 +1885,7 @@ function loadGameFile(input) {
 }
 
 function saveGame() {
-    const saveData = { player, worldMap, entityMap, rotation };
+    const saveData = { gameVersion: GAME_VERSION, player, worldMap, entityMap, rotation };
     const blob = new Blob([JSON.stringify(saveData, jsonReplacer)], {type: "application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2489,6 +2622,9 @@ function handleItemPickup(meta) {
             player.gold += 5;
             flash(`Found duplicate ${meta.name}, sold for 5g.`);
         }
+    } else if (meta.type === 'tool') {
+        addToolByKey(meta.key);
+        flash(`Found Tool: ${meta.name}!`);
     } else if (meta.type === 'equip') {
         if (!player.equipmentBag) player.equipmentBag = [];
         // Ensure slot field exists
@@ -2664,7 +2800,16 @@ function playerTurnAttack(weapon) {
         player.mp -= weapon.mpCost;
     }
 
-    const raw = Math.max(0, weapon.dmg + Math.floor(Math.random() * 3) - 1);
+// Automatic dice roll for crits (subtle sound)
+playSound('diceRoll', 0.18);
+const roll = Math.floor(Math.random() * 20) + 1;
+let critNote = "";
+let raw = Math.max(0, weapon.dmg + Math.floor(Math.random() * 3) - 1);
+if (roll === 20) {
+    raw = raw * 2;
+    critNote = " Critical hit!";
+    flash("Critical hit!");
+}
     const dmgKind = ((weapon.mpCost || 0) > 0) ? 'magic' : 'physical';
     const applied = applyDamageToEnemy(raw, dmgKind);
     const dmg = applied.final;
@@ -2680,7 +2825,7 @@ function playerTurnAttack(weapon) {
         awardVictory();
     } else {
         const weak = (applied.mult > 1.01) ? " It's super effective!" : "";
-        enemyTurn(`Hit for ${dmg}.${weak}`);
+        enemyTurn(`Hit for ${dmg}.${weak}${critNote}`);
     }
 }
 
@@ -2725,7 +2870,16 @@ function useCombatSkill(skillName) {
     // Skills are intentionally a bit less powerful; levels add small +5% boosts.
     const baseRaw = Math.max(0, (sk.dmgBase || 0) + (sk.dmgScale || 0) * player.level + varRoll);
     const mul = skillPowerMultiplier(skillName);
-    const raw = Math.max(0, Math.round(baseRaw * mul));
+// Automatic dice roll for crits on damaging skills
+playSound('diceRoll', 0.18);
+const roll = Math.floor(Math.random() * 20) + 1;
+let critNote = "";
+let raw = Math.max(0, Math.round(baseRaw * mul));
+if (roll === 20) {
+    raw = raw * 2;
+    critNote = " Critical hit!";
+    flash("Critical hit!");
+}
     const dmgKind = (sk.kind === "magic") ? "magic" : "physical";
     const applied = applyDamageToEnemy(raw, dmgKind);
     let dmg = applied.final;
@@ -2751,7 +2905,7 @@ function useCombatSkill(skillName) {
         awardVictory();
     } else {
         const weak = (applied.mult > 1.01) ? " It's super effective!" : "";
-        enemyTurn(`Used ${skillName} for ${dmg} DMG.${weak}`);
+        enemyTurn(`Used ${skillName} for ${dmg} DMG.${weak}${critNote}`);
     }
 }
 
@@ -2925,6 +3079,20 @@ function enterShop(meta) {
     } else {
         ITEM_CATALOG.general.forEach(it => shopInventory.push({ ...it }));
     }
+
+// Tools should be buyable in shops (all non-restaurant shops)
+if (shopType !== "restaurant") {
+    TOOL_DEFS.forEach(t => {
+        shopInventory.push({
+            type: "tool",
+            key: t.key,
+            name: t.name,
+            price: 22 + (player.level * 4),
+            maxDurability: t.maxDurability
+        });
+    });
+}
+
 
     if (shopType === "armory") {
         WEAPON_CATALOG.armory.filter(w => player.level >= w.levelReq)
@@ -3115,6 +3283,8 @@ function buyItem(i) {
             player.inventory[item.add]++;
         } else if (item.type === 'food') {
             addFoodToInventory(item);
+        } else if (item.type === 'tool') {
+            addToolByKey(item.key);
         } else if (item.type === 'equip') {
             if (!player.equipmentBag) player.equipmentBag = [];
             player.equipmentBag.push(item);
