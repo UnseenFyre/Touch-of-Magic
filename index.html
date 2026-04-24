@@ -328,133 +328,120 @@ function validateSymbols() {
 }
 
 /* --- DUNGEONS (RIDDLES) --- */
+// Each riddle has an explicit tier (0-3) so selection is deterministic.
+// Tier 0 = levels 1-2 (simple), Tier 1 = levels 3-4 (moderate),
+// Tier 2 = levels 5-7 (hard), Tier 3 = levels 8+ (expert).
 const RIDDLES = [
-  {"q": "What has keys but can't open locks?", "choices": ["A shoe", "A map", "A piano", "A candle"], "a": 2},
-  {"q": "What has to be broken before you can use it?", "choices": ["A mirror", "An egg", "A seal", "A window"], "a": 1},
-  {"q": "I'm tall when I'm young and short when I'm old. What am I?", "choices": ["A tree", "A candle", "A shadow", "A mountain"], "a": 1},
-  {"q": "What gets wetter the more it dries?", "choices": ["A cloud", "A sponge", "A river", "A towel"], "a": 3},
-  {"q": "What has a head and a tail but no body?", "choices": ["A comet", "A coin", "A snake", "A kite"], "a": 1},
-  {"q": "What can travel around the world while staying in a corner?", "choices": ["A compass", "A stamp", "A satellite", "A suitcase"], "a": 1},
-  {"q": "What has hands but can’t clap?", "choices": ["A clock", "A robot", "A chair", "A branch"], "a": 0},
-  {"q": "What goes up but never comes down?", "choices": ["Smoke", "A ladder", "Your age", "A balloon"], "a": 2},
-  {"q": "What has one eye but can’t see?", "choices": ["A button", "A potato", "A needle", "A storm"], "a": 2},
-  {"q": "What has many teeth but can’t bite?", "choices": ["A zipper", "A rake", "A comb", "A saw"], "a": 2},
-  {"q": "What is full of holes but still holds water?", "choices": ["A sponge", "A cup", "A basket", "A net"], "a": 0},
-  {"q": "What can you catch but not throw?", "choices": ["A cold", "A fish", "A ball", "A rope"], "a": 0},
-  {"q": "What has a neck but no head?", "choices": ["A bottle", "A guitar", "A giraffe", "A shirt"], "a": 0},
-  {"q": "What begins with T, ends with T, and has T in it?", "choices": ["A ticket", "A toast", "A tent", "A teapot"], "a": 3},
-  {"q": "What kind of room has no doors or windows?", "choices": ["A bathroom", "A bedroom", "A courtroom", "A mushroom"], "a": 3},
-  {"q": "What runs but never walks?", "choices": ["A dog", "A car", "A clock", "A river"], "a": 3},
-  {"q": "What has a bed but never sleeps?", "choices": ["A book", "A cat", "A shoe", "A river"], "a": 3},
-  {"q": "What has a ring but no finger?", "choices": ["A bell", "A planet", "A tree", "A telephone"], "a": 3},
-  {"q": "What can fill a room but takes up no space?", "choices": ["Light", "Water", "Air", "Dust"], "a": 0},
-  {"q": "What has words but never speaks?", "choices": ["A parrot", "A book", "A bell", "A radio"], "a": 1},
-  {"q": "The more you take, the more you leave behind. What are they?", "choices": ["Leaves", "Memories", "Coins", "Footsteps"], "a": 3},
-  {"q": "What comes once in a minute, twice in a moment, but never in a thousand years?", "choices": ["The letter A", "The letter M", "The number 1", "The word time"], "a": 1},
-  {"q": "What can be cracked, made, told, and played?", "choices": ["A code", "A game", "A joke", "A song"], "a": 2},
-  {"q": "What has an end but no beginning?", "choices": ["A road", "A circle", "A rope", "A pencil"], "a": 2},
-  {"q": "What has a spine but no bones?", "choices": ["A snake", "A ladder", "A fish", "A book"], "a": 3},
-  {"q": "What is always in front of you but can’t be seen?", "choices": ["Your thoughts", "The wind", "The future", "The past"], "a": 2},
-  {"q": "What has legs but doesn’t walk?", "choices": ["A person", "A table", "A spider", "A horse"], "a": 1},
-  {"q": "What has a thumb and four fingers but isn’t alive?", "choices": ["A sock", "A glove", "A hand", "A mitten"], "a": 1},
-  {"q": "What can you hold in your left hand but not in your right?", "choices": ["Your right elbow", "Your nose", "Your right hand", "Your left elbow"], "a": 0},
-  {"q": "What goes through cities and fields but never moves?", "choices": ["A road", "A train", "A shadow", "A river"], "a": 0},
-  {"q": "What is so fragile that saying its name breaks it?", "choices": ["Silence", "A secret", "Glass", "Ice"], "a": 0},
-  {"q": "What has a heart that doesn’t beat?", "choices": ["A robot", "An artichoke", "A stone", "A tree"], "a": 1},
-  {"q": "What has an eye but cannot see and is taller when younger?", "choices": ["A fountain", "A candle", "A pencil", "A flagpole"], "a": 1},
-  {"q": "What has a face and two hands but no arms or legs?", "choices": ["A statue", "A mirror", "A clock", "A doll"], "a": 2},
-  {"q": "What can you make that no one can see?", "choices": ["Noise", "A shadow", "A cake", "A painting"], "a": 0},
-  {"q": "What is easy to lift but hard to throw?", "choices": ["A book", "A chair", "A rock", "A feather"], "a": 3},
-  {"q": "What has a bottom at the top?", "choices": ["A bottle", "A sock", "A leg", "A mountain"], "a": 2},
-  {"q": "What starts with an E, ends with an E, but contains only one letter?", "choices": ["An eye", "A e-bike", "An earring", "An envelope"], "a": 3},
-  {"q": "What has four wheels and flies?", "choices": ["A dragonfly", "A garbage truck", "A bus", "An airplane"], "a": 1},
-  {"q": "What kind of tree can you carry in your hand?", "choices": ["An oak", "A palm", "A maple", "A pine"], "a": 1},
-  {"q": "What has lots of eyes but can’t see?", "choices": ["A spider", "A storm", "A peacock", "A potato"], "a": 3},
-  {"q": "What is black when it’s clean and white when it’s dirty?", "choices": ["A chalkboard", "A cat", "A shirt", "A piano"], "a": 0},
-  {"q": "What is always coming but never arrives?", "choices": ["Tomorrow", "Winter", "A train", "A guest"], "a": 0},
-  {"q": "What can you keep after giving it to someone?", "choices": ["Money", "Your word", "A gift", "A book"], "a": 1},
-  {"q": "What has a bark but no bite?", "choices": ["A dog", "A fox", "A wolf", "A tree"], "a": 3},
-  {"q": "What has a toe but no foot?", "choices": ["A shoe", "A mountain", "A toe ring", "A sock"], "a": 2},
-  {"q": "What has a tail but no legs?", "choices": ["A lizard", "A comet", "A chair", "A dog"], "a": 1},
-  {"q": "What has many needles but doesn't sew?", "choices": ["A clock", "A pine tree", "A cactus", "A porcupine"], "a": 1},
-  {"q": "What is made of water but if you put it into water it will die?", "choices": ["A sponge", "A fish", "A cloud", "An ice cube"], "a": 3},
-  {"q": "What has branches but no fruit, trunk or leaves?", "choices": ["A tree", "A river", "A road", "A bank"], "a": 3},
-  {"q": "What can you see once in a year, twice in a week, and never in a day?", "choices": ["The letter A", "The letter E", "The number 7", "The letter Y"], "a": 1},
-  {"q": "What gets bigger the more you take away?", "choices": ["A pile", "A balloon", "A shadow", "A hole"], "a": 3},
-  {"q": "What can you hear but not touch or see?", "choices": ["A voice", "A dream", "A rainbow", "A cloud"], "a": 0},
-  {"q": "What has a single horn but makes no noise?", "choices": ["A trumpet", "A unicorn on a road sign", "A bicycle", "A rhino"], "a": 1},
-  {"q": "What can you open but not close?", "choices": ["A jar", "A book", "Your eyes", "A door"], "a": 2},
-  {"q": "What is always running but never gets tired?", "choices": ["A fan", "A clock", "A river", "A dog"], "a": 1},
-  {"q": "What has a head, a tail, is brown, and has no legs?", "choices": ["A kite", "A bear", "A snake", "A penny"], "a": 3},
-  {"q": "What has lots of rings but no fingers?", "choices": ["A circus", "A tree", "A telephone", "A bracelet"], "a": 2},
-  {"q": "What comes down but never goes up?", "choices": ["Rain", "A ball", "Snow", "A kite"], "a": 0},
-  {"q": "What has two hands and a face but no body?", "choices": ["A doll", "A map", "A clock", "A book"], "a": 2},
-  {"q": "What has a mouth but never eats?", "choices": ["A river", "A cave", "A clock", "A fish"], "a": 0},
-  {"q": "What has cities but no houses, forests but no trees, and water but no fish?", "choices": ["A map", "A globe", "A book", "A painting"], "a": 0},
-  {"q": "What can be shown but not touched?", "choices": ["A coin", "A chair", "A rock", "A movie"], "a": 3},
-  {"q": "What has a tongue but cannot talk?", "choices": ["A bell", "A frog", "A shoe", "A book"], "a": 2},
-  {"q": "What is so light that even the strongest person can’t hold it for long?", "choices": ["A feather", "Breath", "A cloud", "A balloon"], "a": 1},
-  {"q": "What goes up and down but doesn’t move?", "choices": ["A staircase", "An elevator", "A yo-yo", "A mountain"], "a": 0},
-  {"q": "What belongs to you but other people use it more than you do?", "choices": ["Your phone", "Your shoes", "Your money", "Your name"], "a": 3},
-  {"q": "What can you break without touching it?", "choices": ["A rock", "A glass", "A stick", "A promise"], "a": 3},
-  {"q": "What has an ear but cannot hear?", "choices": ["A bat", "A phone", "Corn", "A dog"], "a": 2},
-  {"q": "What has a head, a tail, but no body and is not alive?", "choices": ["A fish", "A coin", "A kite", "A snake"], "a": 1},
-  {"q": "What is cut on a table but never eaten?", "choices": ["A deck of cards", "Bread", "A cake", "Cheese"], "a": 0},
-  {"q": "What can’t talk but will reply when spoken to?", "choices": ["An echo", "A book", "A radio", "A mirror"], "a": 0},
-  {"q": "What has a foot but no legs?", "choices": ["A shoe", "A chair", "A snail", "A table"], "a": 2},
-  {"q": "What has a leaf but isn’t a plant?", "choices": ["A tree", "A river", "A book", "A salad"], "a": 2},
-  {"q": "What can be measured but has no length, width, or height?", "choices": ["Time", "Light", "Sand", "Water"], "a": 0},
-  {"q": "What is always in bed but never sleeps?", "choices": ["A book", "A rock", "A cat", "A river"], "a": 3},
-  {"q": "What kind of band never plays music?", "choices": ["A rock band", "A marching band", "A jazz band", "A rubber band"], "a": 3},
-  {"q": "What has a key but can't unlock anything?", "choices": ["A map", "A keyboard", "A lockpick", "A spoon"], "a": 1},
-  {"q": "What is at the end of a rainbow?", "choices": ["A storm", "The letter W", "A pot of gold", "A cloud"], "a": 1},
-  {"q": "What begins with P and ends with E and has thousands of letters?", "choices": ["A post office", "A poem", "A paper", "A pineapple"], "a": 0},
-  {"q": "What is always in the middle of nowhere?", "choices": ["A road", "A desert", "A map", "The letter H"], "a": 3},
-  {"q": "What has a lot of bark but no bite, and is often stacked?", "choices": ["Wood", "A dog", "A book", "A fence"], "a": 0},
-  {"q": "What has a tail and a head but no body and you can flip it?", "choices": ["A coin", "A pencil", "A kite", "A fish"], "a": 0},
-  {"q": "What is something you can never eat for breakfast?", "choices": ["Lunch", "Toast", "Eggs", "Cereal"], "a": 0},
-  {"q": "What can you hold without ever touching it?", "choices": ["A cup", "A rope", "A stone", "A conversation"], "a": 3},
-  {"q": "What is white when it's dirty and black when it's clean?", "choices": ["A chalkboard", "A shirt", "A piano", "A panda"], "a": 0},
-  {"q": "What has a back but no front?", "choices": ["A cat", "A book", "A car", "A chair"], "a": 3},
-  {"q": "What comes before thunder and after lightning?", "choices": ["Rain", "Wind", "Clouds", "The letter N"], "a": 3},
-  {"q": "What kind of coat can only be put on when wet?", "choices": ["A raincoat", "A coat of paint", "A winter coat", "A lab coat"], "a": 1},
-  {"q": "What can you throw but it will always come back?", "choices": ["A ball", "A frisbee", "A stone", "A boomerang"], "a": 3},
-  {"q": "What has a head and a tail but no body, and is found in pockets?", "choices": ["A key", "A coin", "A shell", "A ticket"], "a": 1},
-  {"q": "What is filled with air but can’t be inflated?", "choices": ["A tire", "A bubble wrap pocket", "A balloon", "A cloud"], "a": 1},
-  {"q": "What has a lock but no door?", "choices": ["A chain", "A locker", "A hair", "A box"], "a": 2},
-  {"q": "What is found in a minute but not in an hour?", "choices": ["A second", "The letter M", "The letter U", "The number 2"], "a": 1},
-  {"q": "What has two banks but no money?", "choices": ["A map", "A cloud", "A chair", "A river"], "a": 3},
-  {"q": "What can be kept, lost, or given away and is invisible?", "choices": ["Trust", "A key", "A coin", "A chair"], "a": 0},
-  {"q": "What has one head, one foot, and four legs?", "choices": ["A chair", "A bed", "A dog", "A table"], "a": 1},
-  {"q": "What has an endless supply of letters but starts empty?", "choices": ["A mailbox", "A post office", "A bag", "A book"], "a": 0},
-  {"q": "What is greater than God, more evil than the devil, the poor have it, the rich need it, and if you eat it you die?", "choices": ["Nothing", "Time", "Fire", "Gold"], "a": 0},
-  {"q": "What has a neck and no head, two arms and no hands?", "choices": ["A guitar", "A bottle", "A coat", "A shirt"], "a": 3},
+  // ── TIER 0 ─ simple classic riddles ────────────────────────────────────────
+  {tier:0, q:"What has keys but can't open locks?", choices:["A river","A piano","A safe","A map"], a:1},
+  {tier:0, q:"What gets wetter the more it dries?", choices:["A cloud","A river","A towel","A sponge"], a:2},
+  {tier:0, q:"What has hands but can't clap?", choices:["A statue","A clock","A robot","A branch"], a:1},
+  {tier:0, q:"What has many teeth but can't bite?", choices:["A saw","A shark","A comb","A zipper"], a:2},
+  {tier:0, q:"What goes up but never comes down?", choices:["A kite","A balloon","Your age","Smoke"], a:2},
+  {tier:0, q:"What can travel the world while staying in a corner?", choices:["A compass","A stamp","A stone","A coin"], a:1},
+  {tier:0, q:"What has one eye but can't see?", choices:["A button","A camera","A needle","A storm"], a:2},
+  {tier:0, q:"What has a neck but no head?", choices:["A shirt","A rope","A bottle","A guitar"], a:2},
+  {tier:0, q:"What can you catch but not throw?", choices:["A ball","A cold","A fish","A rope"], a:1},
+  {tier:0, q:"What fills a room but takes up no space?", choices:["Air","Water","Light","Dust"], a:2},
+  {tier:0, q:"What has a head and a tail but no body?", choices:["A snake","A comet","A coin","A kite"], a:2},
+  {tier:0, q:"What runs but never walks, has a mouth but never talks?", choices:["A dog","A car","A clock","A river"], a:3},
+  {tier:0, q:"What has words but never speaks?", choices:["A parrot","A book","A radio","A bell"], a:1},
+  {tier:0, q:"What gets bigger the more you take away?", choices:["A pile","A balloon","A shadow","A hole"], a:3},
+  {tier:0, q:"What kind of room has no doors or windows?", choices:["A bathroom","A courtroom","A bedroom","A mushroom"], a:3},
+  {tier:0, q:"What has a tongue but cannot talk?", choices:["A bell","A frog","A shoe","A book"], a:2},
+  {tier:0, q:"What has a bark but no bite?", choices:["A dog","A fox","A wolf","A tree"], a:3},
+  {tier:0, q:"What has an ear but can't hear?", choices:["A bat","A phone","Corn","A dog"], a:2},
+  {tier:0, q:"What can be broken without touching it?", choices:["A rock","A glass","A stick","A promise"], a:3},
+  {tier:0, q:"What is always coming but never arrives?", choices:["Tomorrow","Winter","A train","A guest"], a:0},
+  {tier:0, q:"What has legs but doesn't walk?", choices:["A person","A table","A spider","A horse"], a:1},
+  {tier:0, q:"I have cities but no houses, forests but no trees, water but no fish. What am I?", choices:["A globe","A book","A map","A painting"], a:2},
+  {tier:0, q:"What is full of holes but still holds water?", choices:["A sponge","A cup","A basket","A net"], a:0},
+  {tier:0, q:"What comes once in a minute, twice in a moment, and never in a thousand years?", choices:["A second","The letter M","A blink","A wish"], a:1},
+  {tier:0, q:"What has a back but no front?", choices:["A cat","A book","A car","A chair"], a:3},
+
+  // ── TIER 1 ─ moderate, two-step riddles ────────────────────────────────────
+  {tier:1, q:"I speak without a mouth and hear without ears. I have no body but come alive with wind. What am I?", choices:["A spirit","An echo","A whistle","A breeze"], a:1},
+  {tier:1, q:"The more of me you take, the more you leave behind. What am I?", choices:["Leaves","Memories","Coins","Footsteps"], a:3},
+  {tier:1, q:"I am always hungry and must always be fed. The finger I touch turns red. What am I?", choices:["A rose","Fire","A blade","A bee"], a:1},
+  {tier:1, q:"I am taken from a mine, shut in a wooden case, never released yet used by almost everyone. What am I?", choices:["A gemstone","Coal","Pencil lead","Iron ore"], a:2},
+  {tier:1, q:"The person who makes me doesn't need me. The buyer doesn't use me. The user doesn't know it. What am I?", choices:["A poison","A grave","A coffin","A lock"], a:2},
+  {tier:1, q:"Turn me on my side and I am everything. Cut me in half and I am nothing. What am I?", choices:["The number 0","The number 8","A circle","A coin"], a:1},
+  {tier:1, q:"I am an odd number. Take away a letter and I become even. What am I?", choices:["Nine","Seven","Three","Five"], a:1},
+  {tier:1, q:"What has a heart that doesn't beat?", choices:["A robot","An artichoke","A stone","A drum"], a:1},
+  {tier:1, q:"I am black when clean and white when dirty. What am I?", choices:["A cat","A shirt","A chalkboard","A piano"], a:2},
+  {tier:1, q:"What goes up when rain goes down?", choices:["The sun","Humidity","An umbrella","A flood"], a:2},
+  {tier:1, q:"I have many faces but no head, many numbers but no math. Without me you'd lose track of your days. What am I?", choices:["A clock","A calendar","A map","A ruler"], a:1},
+  {tier:1, q:"What five-letter word becomes shorter when you add two letters to it?", choices:["Small","Short","Brief","Quick"], a:1},
+  {tier:1, q:"I shrink every time you use me. Bought by the yard, worn by the foot. What am I?", choices:["A belt","A rope","A carpet","A sock"], a:2},
+  {tier:1, q:"I have branches but no fruit, trunk, or leaves. What am I?", choices:["A stream","A vein","A road","A bank"], a:3},
+  {tier:1, q:"What is so light that even the strongest person can't hold it for more than a few minutes?", choices:["A feather","Breath","A cloud","A balloon"], a:1},
+  {tier:1, q:"What building has the most stories?", choices:["A skyscraper","A castle","A library","A museum"], a:2},
+  {tier:1, q:"I can fly without wings, cry without eyes. Wherever I go, darkness follows. What am I?", choices:["A storm","A raven","A cloud","A shadow"], a:2},
+  {tier:1, q:"I have many keys but open no locks. I have space but no room, and you can enter but you can't go inside. What am I?", choices:["A puzzle","A keyboard","A safe","A dungeon"], a:1},
+  {tier:1, q:"What word is spelled incorrectly in every dictionary?", choices:["Error","Wrong","Incorrectly","Misspelling"], a:2},
+  {tier:1, q:"What can you keep after giving it to someone else?", choices:["Money","Your word","A gift","A secret"], a:1},
+  {tier:1, q:"I am always old and sometimes new. Never sad, sometimes blue. Never empty, sometimes full. Never pushes, always pulls. What am I?", choices:["The wind","The tide","The moon","The sun"], a:2},
+  {tier:1, q:"What has a single horn and gives milk but is not a cow?", choices:["A goat","A milk truck","A rhino","A sheep"], a:1},
+  {tier:1, q:"What is so fragile that saying its name breaks it?", choices:["Glass","Silence","A secret","Ice"], a:1},
+  {tier:1, q:"What is at the end of a rainbow?", choices:["A storm","The letter W","A pot of gold","A cloud"], a:1},
+  {tier:1, q:"What has a face and two hands but no arms or legs?", choices:["A statue","A mirror","A clock","A doll"], a:2},
+
+  // ── TIER 2 ─ hard, requires reasoning ──────────────────────────────────────
+  {tier:2, q:"I am the beginning of the end, the end of every place. The beginning of eternity, the end of time and space. What am I?", choices:["Death","The letter E","The number 0","Infinity"], a:1},
+  {tier:2, q:"A rooster lays an egg at the peak of a roof. Which way does it roll?", choices:["Left","Right","Down the slope","Roosters don't lay eggs"], a:3},
+  {tier:2, q:"If you have me, you want to share me. Once you share me, you no longer have me. What am I?", choices:["Money","A secret","A gift","Knowledge"], a:1},
+  {tier:2, q:"What is the next letter in this sequence: O T T F F S S E ?", choices:["N","T","E","I"], a:0},
+  {tier:2, q:"Forward I am heavy; backward I am not. What am I?", choices:["The word rock","The word ton","A boulder","The word lead"], a:1},
+  {tier:2, q:"The more you have of me, the less you see. What am I?", choices:["Money","Fog","Darkness","Fear"], a:2},
+  {tier:2, q:"If you are running a race and pass the person in second place, what place are you in?", choices:["First","Second","Third","Last"], a:1},
+  {tier:2, q:"A man can jump higher than a mountain. How?", choices:["With a trampoline","Mountains can't jump","Magic boots","With a running start"], a:1},
+  {tier:2, q:"I add five to nine and get two. What am I describing?", choices:["Bad math","Clock time: 9 AM plus 5 hours equals 2 PM","Temperature","A trick"], a:1},
+  {tier:2, q:"Two children are born on the same day to the same mother but are not twins. How?", choices:["One is adopted","They are triplets","One born at midnight","They have different fathers"], a:1},
+  {tier:2, q:"You are in a dark room with one match. You have a candle, a wood stove, and a gas lamp. What do you light first?", choices:["The candle","The stove","The gas lamp","The match"], a:3},
+  {tier:2, q:"A farmer had 17 sheep. All but 9 died. How many does he have?", choices:["8","9","17","0"], a:1},
+  {tier:2, q:"How many months have 28 days?", choices:["Only February","3","6","All of them"], a:3},
+  {tier:2, q:"A boy's hat and jacket got soaked in the rain but not a single hair on his head was wet. How?", choices:["He wore a bag","He ran home","He was bald","He had an umbrella"], a:2},
+  {tier:2, q:"If there are 3 apples and you take away 2, how many do you have?", choices:["1","2","3","0"], a:1},
+  {tier:2, q:"What can you hold in your right hand but never in your left?", choices:["A coin","A book","Your right elbow","Your left hand"], a:2},
+  {tier:2, q:"The more you cook me, the harder I am to catch. What am I?", choices:["A fish","A lie","A recipe","An egg"], a:1},
+  {tier:2, q:"What is always present but can never be touched, has no shape yet fills all space, and is vital to your next breath?", choices:["Time","The soul","Air","Light"], a:2},
+  {tier:2, q:"What number multiplied by itself gives the same result as when added to itself?", choices:["1","2","4","0"], a:1},
+  {tier:2, q:"There are three houses: the red house is left of the white house. The blue house is right of the white house. Where is the white house?", choices:["On the left","In the middle","On the right","It doesn't exist"], a:1},
+  {tier:2, q:"What is taken before you get it but you still own it afterward?", choices:["Advice","A photograph","An oath","A loan"], a:1},
+  {tier:2, q:"What is special about the word STARTLING? Remove one letter at a time and always get a valid word.", choices:["It's an anagram","Each removal gives a valid word","It contains all vowels","It can be reversed"], a:1},
+  {tier:2, q:"Mary's father has five daughters: Nana, Nene, Nini, Nono. What is the name of the fifth daughter?", choices:["Nunu","Nana","Mary","Nina"], a:2},
+  {tier:2, q:"What word, if pronounced right, is wrong; but if pronounced wrong, is right?", choices:["Correct","Wrong","Right","Silent"], a:1},
+  {tier:2, q:"I have no life but I can grow. No lungs but I need air. No mouth but water kills me. What am I?", choices:["A plant","Moss","Fire","Mold"], a:2},
+
+  // ── TIER 3 ─ expert, lateral thinking and logic ─────────────────────────────
+  {tier:3, q:"I am weightless, yet you can see me. Put me in a bucket and I'll make it lighter. What am I?", choices:["Air","Light","A hole","Dust"], a:2},
+  {tier:3, q:"A father's child, a mother's child, yet no one's son. Who is it?", choices:["An orphan","A ghost","A daughter","A stepchild"], a:2},
+  {tier:3, q:"What word starts with E, ends with E, and contains only one letter?", choices:["Eye","Ease","An envelope","Eagle"], a:2},
+  {tier:3, q:"What is the one question you can never honestly answer 'Yes' to?", choices:["Are you asleep?","Are you dead?","Are you lying?","Are you awake?"], a:0},
+  {tier:3, q:"What is greater than God, more evil than the Devil, the poor have it, the rich need it, and if you eat it you die?", choices:["Greed","Power","Nothing","Suffering"], a:2},
+  {tier:3, q:"The man who built it sold it. The man who bought it never used it. The man who used it never saw it. What is it?", choices:["A weapon","A coffin","A house","A mirror"], a:1},
+  {tier:3, q:"Every evening I am told what to do and each morning I do it, but in a new way each time. What am I?", choices:["A servant","An alarm","A dream","A diary"], a:2},
+  {tier:3, q:"If a red house is made of red bricks and a blue house of blue bricks, what is a greenhouse made of?", choices:["Green bricks","Plants","Glass","Vines"], a:2},
+  {tier:3, q:"In a one-story building, everything is blue: walls, floor, ceiling. What color are the stairs?", choices:["Blue","White","There are no stairs","Gray"], a:2},
+  {tier:3, q:"A woman shoots her husband, then holds him underwater for five minutes. An hour later they go to dinner. How?", choices:["It was an accident","She photographed him, then developed the film","They have superpowers","She is a nurse"], a:1},
+  {tier:3, q:"What is next in this sequence: 1, 11, 21, 1211, 111221, ?", choices:["1112211","312211","21122","1311"], a:1},
+  {tier:3, q:"You are in a race and pass the person in last place. What place are you in?", choices:["First","Last","Second to last","You cannot pass last place"], a:3},
+  {tier:3, q:"What occurs once in a second, twice in a decade, but never in a century?", choices:["A heartbeat","The letter E","The number 0","A breath"], a:1},
+  {tier:3, q:"A prisoner may say one sentence. If true, he is hanged. If false, he is beheaded. What does he say to survive?", choices:["I am innocent","You will behead me","God save the king","I do not exist"], a:1},
+  {tier:3, q:"I am always coming but never arrive. Always going but never depart. Always changing but always the same. What am I?", choices:["Time","The wind","Tomorrow","The present"], a:2},
+  {tier:3, q:"Two guards stand before two doors: paradise and peril. One always lies, one always tells truth. You ask one guard one question. What do you ask?", choices:["Which door is safe?","What would the other guard say is the safe door? Take the opposite.","Are you a liar?","Which door would you choose?"], a:1},
+  {tier:3, q:"In 23 random people, what is the probability at least two share a birthday?", choices:["Less than 5 percent","About 25 percent","Greater than 50 percent","Exactly 50 percent"], a:2},
+  {tier:3, q:"A snail climbs 3 feet up a 30-foot well each day and slides back 2 feet each night. How many days to escape?", choices:["27 days","28 days","30 days","It never escapes"], a:1},
+  {tier:3, q:"What gets sharper the more you use it but dulls the moment you stop?", choices:["A blade","Your mind","A stone","Memory"], a:1},
+  {tier:3, q:"I am always with you but never the same twice. Made every night and gone by morning. Cannot be touched yet affects you deeply. What am I?", choices:["The stars","A dream","Sleep","Your shadow"], a:1},
+  {tier:3, q:"I am the shadow of nothing yet I can block the sun. I have no weight yet tip the scales. No voice yet speak the loudest. What am I?", choices:["Fear","Silence","Darkness","Truth"], a:1},
+  {tier:3, q:"What can be a noun, a verb, and a question? It is what you seek and what you fear. What am I?", choices:["Death","Truth","Magic","Power"], a:1},
+  {tier:3, q:"Five pirates divide 100 gold coins. Each proposes a split; if less than half agree, the proposer walks the plank. What should the senior pirate propose?", choices:["20 each","96 for himself and 1 each to two others","50-50 with first mate","Let the youngest decide"], a:1},
+  {tier:3, q:"I have no beginning, middle, or end yet I am not nothing. Every perfect shape takes my form. What am I?", choices:["Infinity","Zero","A circle","A point"], a:2},
+  {tier:3, q:"What is always in the beginning of everything, seen at the start of eternity, not in the middle of the sea, but always at the end of the world?", choices:["The sun","The letter E","Darkness","Hope"], a:1},
 ];
 
-
-// --- Riddle difficulty scaling (dungeons get harder as you level) ---
-function riddleDifficultyScore(r) {
-    const q = String(r?.q || "");
-    const choices = (r?.choices || []).length;
-    // Heuristic: longer + more clause-y + "logic/wordplay" hints => harder.
-    const len = q.length;
-    const clauses = (q.match(/[,\;\:]/g) || []).length + (q.match(/\bbut\b|\band\b|\bor\b|\bif\b|\bthen\b|\bnever\b|\balways\b/gi) || []).length;
-    const neg = (q.match(/\bnot\b|\bnever\b|\bcan't\b|\bcannot\b/gi) || []).length;
-    const abstract = (q.match(/\bgreater\b|\bevil\b|\bpoor\b|\brich\b|\bdie\b|\binvisible\b|\bfragile\b/gi) || []).length;
-    return (len * 0.7) + (clauses * 10) + (neg * 12) + (abstract * 18) + (choices * 2);
-}
-
-let RIDDLE_ORDER = null; // array of indices sorted easiest->hardest
-function buildRiddleOrder() {
-    if (RIDDLE_ORDER) return RIDDLE_ORDER;
-    const scored = RIDDLES.map((r, i) => ({ i, s: riddleDifficultyScore(r) }));
-    scored.sort((a,b) => a.s - b.s);
-    RIDDLE_ORDER = scored.map(x => x.i);
-    return RIDDLE_ORDER;
-}
-
 function riddleTierForLevel(level) {
-    // 4 tiers: 1-2, 3-4, 5-7, 8+
     if (level >= 8) return 3;
     if (level >= 5) return 2;
     if (level >= 3) return 1;
@@ -462,65 +449,149 @@ function riddleTierForLevel(level) {
 }
 
 function pickRiddleIdForLevel(level) {
-    const order = buildRiddleOrder();
     const tier = riddleTierForLevel(level);
-    const n = order.length;
-    const chunk = Math.max(1, Math.floor(n / 4));
-    const start = tier * chunk;
-    const end = (tier === 3) ? n : Math.min(n, start + chunk);
-    const slice = order.slice(start, end);
-    const idx = slice[Math.floor(Math.random() * slice.length)];
-    return (idx === undefined) ? Math.floor(Math.random() * RIDDLES.length) : idx;
+    const candidates = RIDDLES.map((r, i) => i).filter(i => (RIDDLES[i].tier ?? 0) === tier);
+    if (!candidates.length) return 0;
+    return candidates[Math.floor(Math.random() * candidates.length)];
 }
+
 function ensureDungeonMeta(key) {
     let meta = entityMap[key];
     if (!meta || meta.type !== "dungeon") {
         meta = { type: "dungeon", riddleId: null, levelStamp: 0 };
         entityMap[key] = meta;
     }
-    // Refresh riddle when player has outgrown the old tier (keeps dungeons feeling progressive)
     const tierNow = riddleTierForLevel(player.level);
     const tierWas = riddleTierForLevel(meta.levelStamp || 1);
-    if (!meta.riddleId || tierNow !== tierWas) {
+    if (meta.riddleId === null || tierNow !== tierWas) {
         meta.riddleId = pickRiddleIdForLevel(player.level);
         meta.levelStamp = player.level;
     }
-    // clamp
-    if (meta.riddleId === undefined || meta.riddleId === null) meta.riddleId = pickRiddleIdForLevel(player.level);
-    if (meta.riddleId < 0) meta.riddleId = 0;
-    if (meta.riddleId >= RIDDLES.length) meta.riddleId = meta.riddleId % RIDDLES.length;
+    meta.riddleId = Math.max(0, Math.min(RIDDLES.length - 1, meta.riddleId));
     return meta;
 }
 
 function dungeonReward(correct) {
+    const meta = entityMap[interactKey] || {};
+    const tier = RIDDLES[meta.riddleId ?? 0]?.tier ?? riddleTierForLevel(player.level);
+
     if (!correct) {
-        // Small sting, but not cruel.
-        const loss = Math.min(player.gold, 2);
+        const loss = Math.min(player.gold, tier + 2);
         if (loss > 0) player.gold -= loss;
-        flash(loss > 0 ? `Wrong answer. Lost ${loss} gold.` : "Wrong answer.");
+        flash(loss > 0 ? `Wrong. Lost ${loss} gold.` : "Wrong answer.");
         updateStats();
         return;
     }
 
-    const xp = 15 + Math.floor(Math.random() * 11);    // 15–25 XP
-    const gold = 8 + Math.floor(Math.random() * 9);    // 8–16 gold
+    // Rewards scale with tier
+    const xpBase  = [15, 28, 45, 68][tier] ?? 15;
+    const xpVar   = [11, 15, 22, 35][tier] ?? 11;
+    const goldBase = [8, 22, 38, 62][tier] ?? 8;
+    const goldVar  = [9, 15, 24, 40][tier] ?? 9;
+
+    const xp   = xpBase  + Math.floor(Math.random() * xpVar);
+    const gold = goldBase + Math.floor(Math.random() * goldVar);
     player.xp += xp;
     player.gold += gold;
 
-    // Surprise loot (small chance)
+    // Loot chance increases with tier
+    const lootRoll = Math.random();
+    const lootThreshold = [0.15, 0.28, 0.45, 0.65][tier] ?? 0.15;
     let lootMsg = "";
-    const r = Math.random();
-    if (r < 0.12) { player.inventory.potions = (player.inventory.potions || 0) + 1; lootMsg = " Found a Potion!"; }
-    else if (r < 0.20) { player.inventory.ethers = (player.inventory.ethers || 0) + 1; lootMsg = " Found an Ether!"; }
-    else if (r < 0.24) { player.inventory.gilliweed = (player.inventory.gilliweed || 0) + 1; lootMsg = " Found Gilliweed!"; }
+    if (lootRoll < lootThreshold) {
+        const lootTable = [
+            [{ k:'potions', label:'Potion' }, { k:'ethers', label:'Ether' }],
+            [{ k:'potions', label:'Potion' }, { k:'ethers', label:'Ether' }, { k:'elixirs', label:'Elixir' }],
+            [{ k:'ethers', label:'Ether' }, { k:'elixirs', label:'Elixir' }, { k:'gilliweed', label:'Gilliweed' }],
+            [{ k:'elixirs', label:'Elixir' }, { k:'gilliweed', label:'Gilliweed' }, { k:'ankhs', label:'Stone Of Life' }],
+        ][tier];
+        const loot = lootTable[Math.floor(Math.random() * lootTable.length)];
+        player.inventory[loot.k] = (player.inventory[loot.k] || 0) + 1;
+        lootMsg = ` Found: ${loot.label}!`;
+    }
+
+    if (player.tutorial && !player.tutorial.done) advanceTutorial('dungeon');
 
     checkLevelUp();
     updateStats();
-    flash(`Correct! +${xp} XP, +${gold} gold.${lootMsg}`);
+    flash(`Correct! +${xp} XP +${gold}g.${lootMsg}`);
 }
 
 
+function buildTutorialMap() {
+    // Corridor at y=0, x=0..17, walls above/below
+    for (let x = -1; x <= 18; x++) {
+        worldMap[`${x},-1`] = SYM_WALL;
+        worldMap[`${x},1`]  = SYM_WALL;
+    }
+    for (let x = 0; x <= 16; x++) worldMap[`${x},0`] = SYM_EMPTY;
+    worldMap['-1,0'] = SYM_WALL;
+    worldMap['17,0'] = SYM_WALL;
 
+    // Guide NPC
+    worldMap['4,0']  = SYM_NPC;
+    entityMap['4,0'] = { name: 'Elder Guide', isTutorial: true, tutRole: 'guide', npcId: 'tut_guide' };
+
+    // Gold item
+    worldMap['7,0']  = SYM_ITEM;
+    entityMap['7,0'] = { type: 'gold', value: 10, name: '10 Gold' };
+
+    // Training Dummy
+    worldMap['10,0']  = SYM_ENEMY;
+    entityMap['10,0'] = { name: 'Training Dummy', kind: 'physical', hp: 5, maxHp: 5, atk: 1, xp: 5, gold: 3, isTutorial: true };
+
+    // Tutorial dungeon (tier-0 riddle)
+    worldMap['13,0']  = SYM_DUNGEON;
+    entityMap['13,0'] = { type: 'dungeon', riddleId: pickRiddleIdForLevel(1), levelStamp: 1 };
+
+    // Village Elder
+    worldMap['16,0']  = SYM_NPC;
+    entityMap['16,0'] = { name: 'Village Elder', isTutorial: true, tutRole: 'elder', npcId: 'tut_elder' };
+}
+
+const TUT_MSGS = [
+    "Tutorial: Walk forward with F. Press Space near an NPC or object to interact.",
+    "Tutorial: Talk to the Elder Guide ahead — press Space when facing them.",
+    "Tutorial: Pick up the gold item further ahead by walking into it.",
+    "Tutorial: A Training Dummy awaits. Press Space to start the fight.",
+    "Tutorial: Try the dungeon ahead — press Space and answer the riddle.",
+    "Tutorial: Walk to the Village Elder and press Space to finish the tutorial.",
+];
+
+function advanceTutorial(action) {
+    if (!player.tutorial || player.tutorial.done) return;
+    const s = player.tutorial.step;
+
+    const grant = (xp, msg) => {
+        if (xp > 0) { player.xp += xp; checkLevelUp(); updateStats(); }
+        flash(msg);
+    };
+
+    if (action === 'move' && s === 0) {
+        player.tutorial.step = 1;
+        grant(5, "Tutorial: +5 XP for your first step! " + TUT_MSGS[1]);
+    } else if (action === 'guide_talked' && s === 1) {
+        player.tutorial.step = 2;
+        grant(10, "Tutorial: +10 XP! " + TUT_MSGS[2]);
+    } else if (action === 'item' && s === 2) {
+        player.tutorial.step = 3;
+        grant(8, "Tutorial: +8 XP! " + TUT_MSGS[3]);
+    } else if (action === 'combat' && s === 3) {
+        player.tutorial.step = 4;
+        grant(15, "Tutorial: +15 XP! " + TUT_MSGS[4]);
+    } else if (action === 'dungeon' && s === 4) {
+        player.tutorial.step = 5;
+        flash("Tutorial: Dungeon cleared! " + TUT_MSGS[5]);
+    } else if (action === 'elder_talked' && s === 5) {
+        player.tutorial.step = 6;
+        player.tutorial.done = true;
+        // Remove corridor boundary walls so the open world generates around the player
+        for (let x = -1; x <= 18; x++) { delete worldMap[`${x},-1`]; delete worldMap[`${x},1`]; }
+        delete worldMap['-1,0'];
+        delete worldMap['17,0'];
+        grant(20, "Tutorial complete! +20 XP. The world is now open. Good luck, adventurer!");
+    }
+}
 
 /* Skill catalog
    NOTE: Skills start fairly weak. Each skill level adds +5% effectiveness.
@@ -1299,7 +1370,8 @@ let player = {
     equipped: { jewelry: null, clothing: null },
     activeWeaponName: "Fists",
     quests: [],
-    killCounts: {}
+    killCounts: {},
+    tutorial: { step: 0, done: false }
 };
 
 let rotation = 0;
@@ -1526,17 +1598,19 @@ function getAudioCtx() {
 function sfxFootstep(vol=0.30) {
     const ctx = getAudioCtx(); if (!ctx) return;
     const now = ctx.currentTime;
-    // Soft thud: low sine pulse, very short
-    const osc = ctx.createOscillator();
+    // Sharp click: very short bandpass noise burst
+    const dur = 0.010;
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const filt = ctx.createBiquadFilter();
+    filt.type = "bandpass"; filt.frequency.value = 3200; filt.Q.value = 0.6;
     const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(120, now);
-    osc.frequency.exponentialRampToValueAtTime(60, now + 0.06);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, vol), now + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(now); osc.stop(now + 0.09);
+    gain.gain.setValueAtTime(Math.max(0.0001, vol * 1.4), now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    src.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+    src.start(now); src.stop(now + dur + 0.002);
 }
 
 function sfxMenuOpen(vol=0.25) {
@@ -1899,6 +1973,7 @@ function startGame(loadedData = null) {
         });
 
         if (player.killCounts === undefined) player.killCounts = {};
+        if (!player.tutorial) player.tutorial = { step: 0, done: false };
         if (player.foodInventory === undefined) player.foodInventory = {};
         if (player.activeWeaponName === undefined) player.activeWeaponName = "Fists";
         if (!player.weapons) player.weapons = [ { name: "Fists", dmg: 1, durability: Infinity, maxDurability: Infinity, mpCost: 0 } ];
@@ -1943,7 +2018,8 @@ function startGame(loadedData = null) {
 
         log("Game Loaded Successfully.");
     } else {
-        generateChunk(0,0);
+        buildTutorialMap();
+        flash("Welcome to Touch of Magic! Walk forward with F to begin your tutorial.");
     }
 
     updateStats();
@@ -2596,6 +2672,7 @@ function attemptMove(dx) {
             delete entityMap[key];
         }
         player.x = tx; player.y = ty; tickFoodBuff(); updateStats(); playSound('footstep'); renderView();
+        if (player.tutorial && !player.tutorial.done && player.tutorial.step === 0) advanceTutorial('move');
     }
 }
 
@@ -2801,6 +2878,7 @@ function handleItemPickup(meta) {
 
     // Item collection quests complete immediately when requirements are met.
     tryCompleteQuests();
+    if (player.tutorial && !player.tutorial.done && player.tutorial.step === 2) advanceTutorial('item');
 }
 
 /* --- DEATH SYSTEM --- */
@@ -3219,6 +3297,7 @@ function endCombat(won, msg) {
     currentState = 'ROAM';
     io.classList.remove('combat');
     if (modalOpen && modalKind === 'combat') closeModal();
+    if (won && player.tutorial && !player.tutorial.done && player.tutorial.step === 3) advanceTutorial('combat');
     if(msg) flash(msg); else renderView();
 }
 
@@ -3722,6 +3801,40 @@ function openInteractModal(tile, meta, key) {
                 { num: 2, action: "talk" },
                 { num: 3, action: "leave" }
             ];
+        } else if (meta?.isTutorial) {
+            const role = meta.tutRole;
+            if (role === 'guide') {
+                body += `The Elder Guide smiles warmly. Press 1 to receive guidance.
+
+1. Receive Guidance
+2. Leave
+
+[Space Close]`;
+                interactMenu = [
+                    { num: 1, action: "tut_guide" },
+                    { num: 2, action: "leave" }
+                ];
+            } else if (role === 'elder') {
+                body += `The Village Elder looks proud. Press 1 to complete the tutorial.
+
+1. Speak with Elder
+2. Leave
+
+[Space Close]`;
+                interactMenu = [
+                    { num: 1, action: "tut_elder" },
+                    { num: 2, action: "leave" }
+                ];
+            } else {
+                body += `1. Talk
+2. Leave
+
+[Space Close]`;
+                interactMenu = [
+                    { num: 1, action: "talk" },
+                    { num: 2, action: "leave" }
+                ];
+            }
         } else {
             body += `1. Talk
 2. Leave
@@ -3823,6 +3936,34 @@ function handleInteractInput(key) {
 
     if (choice.action === "train") {
         startTraining(interactKey, interactMeta);
+        return;
+    }
+
+    if (choice.action === "tut_guide") {
+        const step = player.tutorial ? player.tutorial.step : 99;
+        let msg;
+        if (step <= 1) {
+            msg = "Elder Guide: Welcome, traveler! Walk this corridor to learn the basics. Use F to move forward, B to move back, L/R to rotate. Press Space near objects to interact.";
+        } else {
+            msg = "Elder Guide: You're doing well. Keep moving forward and face every challenge.";
+        }
+        flash(msg);
+        if (player.tutorial && !player.tutorial.done && step === 1) advanceTutorial('guide_talked');
+        currentState = 'ROAM';
+        return;
+    }
+
+    if (choice.action === "tut_elder") {
+        const step = player.tutorial ? player.tutorial.step : 99;
+        let msg;
+        if (step >= 5) {
+            msg = "Village Elder: You have faced combat, solved a riddle, and explored this corridor. You are ready. The world beyond awaits — may your journey be filled with wonder!";
+        } else {
+            msg = "Village Elder: There is still more to learn. Complete each challenge in the corridor first.";
+        }
+        flash(msg);
+        if (player.tutorial && !player.tutorial.done && step === 5) advanceTutorial('elder_talked');
+        currentState = 'ROAM';
         return;
     }
 
@@ -4039,16 +4180,19 @@ function updateStats() {
 }
 
 function checkLevelUp() {
-    // original framework kept, enhanced with MP and unlock notes
-    if(player.xp >= player.level * 20) {
+    let leveled = false;
+    while (player.xp >= player.level * 20) {
         player.level++;
         player.maxHp += 5;
         player.maxMp += 2;
+        leveled = true;
+    }
+    if (leveled) {
         player.hp = player.maxHp;
         player.mp = player.maxMp;
         playSound('levelUp');
-        log("Level Up!");
-        flash("Level Up! New gear appears in shops.");
+        log(`Level Up! Now level ${player.level}.`);
+        flash(`Level Up to ${player.level}! New gear appears in shops.`);
     }
 }
 
