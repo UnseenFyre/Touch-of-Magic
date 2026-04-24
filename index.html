@@ -1448,6 +1448,7 @@ const io = document.getElementById('braille-io');
 let lastMainIO = "";
 let lastModalIO = "";
 let restoringIO = false;
+let _beforeinputRouted = false; // prevents double-routing when beforeinput + input both fire
 
 
 const IS_IOS = (() => {
@@ -1460,28 +1461,26 @@ const IS_IOS = (() => {
 
 function pokeScreenReader(el) {
     if (!el) return;
-    // Selection range changes prompt screen readers to re-read the element value.
     try {
         const L = (el.value || "").length;
         el.setSelectionRange(L, L);
         el.setSelectionRange(0, 0);
     } catch (e) { /* ignore */ }
 
+    const st = el.scrollTop;
     if (IS_IOS) {
-        // On iOS/VoiceOver: blur() causes VoiceOver to abandon the element before
-        // the refocus fires, permanently losing Braille display focus.
-        // Instead, use a direct focus() call (without blur) which is enough to
-        // trigger VoiceOver to re-read the updated textarea value.
+        // blur() forces VoiceOver to re-read the element value when focus returns.
+        // iosBlurRecovery listener provides a safety-net refocus if VoiceOver wanders.
+        try { el.blur(); } catch(e) {}
         requestAnimationFrame(() => {
             try { el.focus({ preventScroll: true }); } catch (e) { try { el.focus(); } catch(_){} }
-            try { el.setSelectionRange(0, 0); } catch (_) { /* ignore */ }
+            try { el.setSelectionRange(0, 0); } catch (_) {}
+            try { el.scrollTop = st; } catch(_) {}
         });
         return;
     }
 
-    // Desktop Safari / non-iOS: blur/focus nudge refreshes the Braille display.
     if (document.activeElement === el) {
-        const st = el.scrollTop;
         el.blur();
         requestAnimationFrame(() => {
             try { el.focus({ preventScroll: true }); } catch (e) { try { el.focus(); } catch(_){} }
@@ -1532,15 +1531,24 @@ function handleIOInputEvent(el, lastVal, e) {
     const inserted = extractInsertedText(cur, lastVal);
 
     // Restore the IO display synchronously so typed chars never appear.
+    // Use lastMainIO (current game state) instead of lastVal so that if beforeinput
+    // already ran game logic, we restore the correct post-action state.
+    const displayVal = _beforeinputRouted ? lastMainIO : lastVal;
     restoringIO = true;
-    el.value = lastVal;
+    el.value = displayVal;
     restoringIO = false;
     try { el.setSelectionRange(0, 0); } catch(_e) {}
 
-    // iOS: refocus immediately after the value restore. Without this, VoiceOver
-    // interprets the restore as "field rejected input" and moves focus away.
+    // iOS: refocus immediately so VoiceOver doesn't treat the value-restore as rejection.
     if (IS_IOS) {
         try { el.focus({ preventScroll: true }); } catch (_) { try { el.focus(); } catch(__){} }
+    }
+
+    // If beforeinput already routed this key (and iOS ignored our e.preventDefault()),
+    // don't route again — just leave the display showing the post-action state.
+    if (_beforeinputRouted) {
+        _beforeinputRouted = false;
+        return;
     }
 
     if (!inserted) return;
@@ -1550,9 +1558,8 @@ function handleIOInputEvent(el, lastVal, e) {
         else routeKey(String(ch).toLowerCase());
     }
 
-    // iOS: after all game logic runs (renderView, setMainIO, etc.), ensure focus
-    // is back on the correct field. Game logic may call pokeScreenReader which
-    // schedules its own rAF focus; this second rAF runs after that one.
+    // Safety net: ensure focus returns after all game logic (pokeScreenReader may
+    // have scheduled its own blur/focus; this fires after that settles).
     if (IS_IOS) {
         requestAnimationFrame(() => requestAnimationFrame(() => {
             const target = modalOpen ? modalIo : el;
@@ -1876,9 +1883,8 @@ document.addEventListener('focusin', (e) => {
     }
 });
 
-// iOS-specific: recover focus if VoiceOver or system causes an unexpected blur.
-// Desktop path uses blur/refocus inside pokeScreenReader; iOS avoids blur entirely,
-// so we only need this safety net for edge cases (screen lock, tab switch, etc.).
+// iOS-specific: safety-net refocus after any blur (including the intentional blur
+// in pokeScreenReader that triggers VoiceOver to re-read the textarea value).
 if (IS_IOS) {
     function iosBlurRecovery() {
         if (!gameIsShown()) return;
@@ -2229,6 +2235,9 @@ function routeBeforeInput(e) {
     const data = (typeof e.data === 'string') ? e.data : "";
     if (!data) return;
 
+    // Mark as handled so the subsequent 'input' event (fired when iOS ignores
+    // our preventDefault) doesn't route the same key a second time.
+    _beforeinputRouted = true;
     for (const ch of data) {
         if (ch === '\n' || ch === '\r') routeKey('enter');
         else routeKey(String(ch).toLowerCase());
